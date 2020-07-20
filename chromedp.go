@@ -419,7 +419,8 @@ func Authentication(login string, password string) Tasks {
 						}
 						err := c.Browser.conn.Write(ctx, cmd)
 						if err != nil {
-							panic(err)
+							fmt.Println(err)
+							return
 						}
 
 					case *fetch.EventRequestPaused:
@@ -432,7 +433,8 @@ func Authentication(login string, password string) Tasks {
 						}
 						err := c.Browser.conn.Write(ctx, cmd)
 						if err != nil {
-							panic(err)
+							fmt.Println(err)
+							return
 						}
 					}
 				})
