@@ -419,7 +419,7 @@ func Authentication(login string, password string) Tasks {
 						}
 						err := c.Browser.conn.Write(ctx, cmd)
 						if err != nil {
-							fmt.Println(err)
+							c.cancelErr = err
 							return
 						}
 
@@ -433,7 +433,7 @@ func Authentication(login string, password string) Tasks {
 						}
 						err := c.Browser.conn.Write(ctx, cmd)
 						if err != nil {
-							fmt.Println(err)
+							c.cancelErr = err
 							return
 						}
 					}
