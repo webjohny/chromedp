@@ -165,9 +165,9 @@ func (s *Selector) Do(ctx context.Context) error {
 		case <-time.After(5 * time.Millisecond):
 		}
 
-		t.curMu.RLock()
+		t.frameMu.RLock()
 		frame := t.frames[t.cur]
-		t.curMu.RUnlock()
+		t.frameMu.RUnlock()
 
 		if frame == nil {
 			// the frame hasn't loaded yet.
@@ -186,7 +186,7 @@ func (s *Selector) Do(ctx context.Context) error {
 			}
 		} else {
 			// TODO: we probably want to use the nested frame
-			// instead, butnote that util.go stores the nested
+			// instead, but note that util.go stores the nested
 			// frame's nodes in the root frame's Nodes map.
 			// frame = t.frames[fromNode.FrameID]
 			// if frame == nil {
