@@ -276,15 +276,28 @@ func TestQueryIframe(t *testing.T) {
 	ctx, cancel := testAllocate(t, "iframe.html")
 	defer cancel()
 
-	var iframes []*cdp.Node
+	var iframes, forms []*cdp.Node
 	if err := Run(ctx, Nodes(`iframe`, &iframes, ByQuery)); err != nil {
 		t.Fatal(err)
 	}
+	iframe := iframes[0]
+	if err := Run(ctx, Nodes(`#form`, &forms, ByQuery, FromNode(iframe))); err != nil {
+		t.Fatal(err)
+	}
+	form := forms[0]
+
+	var gotFoo string
 	if err := Run(ctx,
-		// TODO: WaitVisible hangs here.
-		WaitReady(`#form`, ByID, FromNode(iframes[0])),
+		WaitVisible(`#form`, ByQuery, FromNode(iframe)),
+		Text("#foo", &gotFoo, ByQuery, FromNode(form)),
+
+		Click("#btn1", ByQuery, FromNode(iframe)),
+		Click("#btn2", ByQuery, FromNode(form)),
 	); err != nil {
 		t.Fatal(err)
+	}
+	if want := "insert"; gotFoo != want {
+		t.Fatalf("wanted %q, got %q", want, gotFoo)
 	}
 }
 
