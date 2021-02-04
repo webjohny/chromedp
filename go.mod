@@ -1,6 +1,6 @@
-module github.com/chromedp/chromedp
+module github.com/webjohny/chromedp
 
-go 1.13
+go 1.15
 
 require (
 	github.com/chromedp/cdproto v0.0.0-20210122124816-7a656c010d57

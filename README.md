@@ -8,7 +8,7 @@ Selenium or PhantomJS).
 
 Install in the usual Go way:
 
-	go get -u github.com/chromedp/chromedp
+	go get -u github.com/webjohny/chromedp
 
 ## Examples
 
@@ -20,7 +20,7 @@ the [examples][4] repository contains more complex examples.
 > I can't see any Chrome browser window
 
 By default, Chrome is run in headless mode. See `DefaultExecAllocatorOptions`, and
-[an example](https://godoc.org/github.com/chromedp/chromedp#example-ExecAllocator)
+[an example](https://godoc.org/github.com/webjohny/chromedp#example-ExecAllocator)
 to override the default options.
 
 > I'm seeing "context canceled" errors
@@ -38,7 +38,7 @@ instance, manually start Chrome and connect using `RemoteAllocator`.
 > Executing an action without `Run` results in "invalid context"
 
 By default, a `chromedp` context does not have an executor, however one can be
-specified manually if necessary; see [issue #326](https://github.com/chromedp/chromedp/issues/326)
+specified manually if necessary; see [issue #326](https://github.com/webjohny/chromedp/issues/326)
 for an example.
 
 > I can't use an `Action` with `Run` because it returns many values
@@ -66,15 +66,15 @@ box.
 * [chromedp examples][4] - various `chromedp` examples
 * [`github.com/chromedp/cdproto`][8] - GoDoc listing for the CDP domains used by `chromedp`
 * [`github.com/chromedp/cdproto-gen`][9] - tool used to generate `cdproto`
-* [`github.com/chromedp/chromedp-proxy`][10] - a simple CDP proxy for logging CDP clients and browsers
+* [`github.com/webjohny/chromedp-proxy`][10] - a simple CDP proxy for logging CDP clients and browsers
 
-[1]: https://godoc.org/github.com/chromedp/chromedp?status.svg
-[2]: https://godoc.org/github.com/chromedp/chromedp
+[1]: https://godoc.org/github.com/webjohny/chromedp?status.svg
+[2]: https://godoc.org/github.com/webjohny/chromedp
 [3]: https://chromedevtools.github.io/devtools-protocol/
 [4]: https://github.com/chromedp/examples
-[5]: https://godoc.org/github.com/chromedp/chromedp
+[5]: https://godoc.org/github.com/webjohny/chromedp
 [6]: https://hub.docker.com/r/chromedp/headless-shell/
 [7]: https://www.youtube.com/watch?v=_7pWCg94sKw
 [8]: https://godoc.org/github.com/chromedp/cdproto
 [9]: https://github.com/chromedp/cdproto-gen
-[10]: https://github.com/chromedp/chromedp-proxy
+[10]: https://github.com/webjohny/chromedp-proxy
