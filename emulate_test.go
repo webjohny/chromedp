@@ -5,7 +5,7 @@ import (
 	"image/png"
 	"testing"
 
-	"github.com/webjohny/chromedp/device"
+	"github.com/chromedp/chromedp/device"
 )
 
 func TestEmulate(t *testing.T) {

@@ -252,9 +252,6 @@ func (s *Selector) waitReady(check func(context.Context, runtime.ExecutionContex
 		if check != nil {
 			errc := make(chan error, 1)
 			for _, n := range nodes {
-				if n == nil {
-					continue
-				}
 				go func(n *cdp.Node) {
 					select {
 					case <-ctx.Done():

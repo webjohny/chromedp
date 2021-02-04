@@ -6,7 +6,7 @@ import (
 	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/cdproto/dom"
 	"github.com/chromedp/cdproto/input"
-	"github.com/webjohny/chromedp/kb"
+	"github.com/chromedp/chromedp/kb"
 )
 
 // MouseAction are mouse input event actions
@@ -74,9 +74,6 @@ func MouseClickNode(n *cdp.Node, opts ...MouseOption) MouseAction {
 		boxes, err := dom.GetContentQuads().WithNodeID(n.NodeID).Do(ctx)
 		if err != nil {
 			return err
-		}
-		if len(boxes) < 1 {
-			return ErrInvalidBoxModel
 		}
 		content := boxes[0]
 

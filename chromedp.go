@@ -13,16 +13,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/chromedp/cdproto"
+	"github.com/chromedp/cdproto/fetch"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/chromedp/cdproto"
 	"github.com/chromedp/cdproto/browser"
 	"github.com/chromedp/cdproto/cdp"
 	"github.com/chromedp/cdproto/css"
 	"github.com/chromedp/cdproto/dom"
-	"github.com/chromedp/cdproto/fetch"
 	"github.com/chromedp/cdproto/inspector"
 	"github.com/chromedp/cdproto/log"
 	"github.com/chromedp/cdproto/network"
@@ -258,6 +258,62 @@ func initContextBrowser(ctx context.Context) (*Context, error) {
 	return c, nil
 }
 
+// Authentication proxy
+func Authentication(login string, password string) Tasks {
+	return Tasks{
+		fetch.Enable().WithPatterns([]*fetch.RequestPattern{{"*", "", ""}}).WithHandleAuthRequests(true),
+		ActionFunc(func(ctx context.Context) error {
+			if login != "" && password != "" {
+				c := FromContext(ctx)
+				if c == nil || c.Allocator == nil || c.cancel == nil {
+					return ErrInvalidContext
+				}
+				id := 1000
+				ListenTarget(ctx, func(ev interface{}) {
+					switch ev := ev.(type) {
+
+					case *fetch.EventAuthRequired:
+						buf, _ := json.Marshal(map[string]interface{}{
+							"requestId": ev.RequestID.String(),
+							"authChallengeResponse": map[string]string{
+								"response": "ProvideCredentials",
+								"username": login,
+								"password": password,
+							},
+						})
+						cmd := &cdproto.Message{
+							ID:        int64(id + 1),
+							SessionID: c.Target.SessionID,
+							Method:    cdproto.MethodType("Fetch.continueWithAuth"),
+							Params:    buf,
+						}
+						err := c.Browser.conn.Write(ctx, cmd)
+						if err != nil {
+							c.cancelErr = err
+							return
+						}
+
+					case *fetch.EventRequestPaused:
+						buf, _ := json.Marshal(map[string]string{"requestId":ev.RequestID.String()})
+						cmd := &cdproto.Message{
+							ID:        int64(id + 1),
+							SessionID: c.Target.SessionID,
+							Method:    cdproto.MethodType("Fetch.continueRequest"),
+							Params:    buf,
+						}
+						err := c.Browser.conn.Write(ctx, cmd)
+						if err != nil {
+							c.cancelErr = err
+							return
+						}
+					}
+				})
+			}
+			return nil
+		}),
+	}
+}
+
 // Run runs an action against context. The provided context must be a valid
 // chromedp context, typically created via NewContext.
 //
@@ -393,62 +449,6 @@ func (c *Context) attachTarget(ctx context.Context, targetID target.ID) error {
 		}
 	}
 	return nil
-}
-
-// Authentication proxy
-func Authentication(login string, password string) Tasks {
-	return Tasks{
-		fetch.Enable().WithPatterns([]*fetch.RequestPattern{{"*", "", ""}}).WithHandleAuthRequests(true),
-		ActionFunc(func(ctx context.Context) error {
-			if login != "" && password != "" {
-				c := FromContext(ctx)
-				if c == nil || c.Allocator == nil || c.cancel == nil {
-					return ErrInvalidContext
-				}
-				id := 1000
-				ListenTarget(ctx, func(ev interface{}) {
-					switch ev := ev.(type) {
-
-					case *fetch.EventAuthRequired:
-						buf, _ := json.Marshal(map[string]interface{}{
-							"requestId": ev.RequestID.String(),
-							"authChallengeResponse": map[string]string{
-								"response": "ProvideCredentials",
-								"username": login,
-								"password": password,
-							},
-						})
-						cmd := &cdproto.Message{
-							ID:        int64(id + 1),
-							SessionID: c.Target.SessionID,
-							Method:    cdproto.MethodType("Fetch.continueWithAuth"),
-							Params:    buf,
-						}
-						err := c.Browser.conn.Write(ctx, cmd)
-						if err != nil {
-							c.cancelErr = err
-							return
-						}
-
-					case *fetch.EventRequestPaused:
-						buf, _ := json.Marshal(map[string]string{"requestId":ev.RequestID.String()})
-						cmd := &cdproto.Message{
-							ID:        int64(id + 1),
-							SessionID: c.Target.SessionID,
-							Method:    cdproto.MethodType("Fetch.continueRequest"),
-							Params:    buf,
-						}
-						err := c.Browser.conn.Write(ctx, cmd)
-						if err != nil {
-							c.cancelErr = err
-							return
-						}
-					}
-				})
-			}
-			return nil
-		}),
-	}
 }
 
 // ContextOption is a context option.

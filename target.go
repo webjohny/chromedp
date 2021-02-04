@@ -259,13 +259,8 @@ func (t *Target) documentUpdated(ctx context.Context) {
 		t.errf("could not retrieve document root for %s: %v", f.ID, err)
 		return
 	}
-	if f.Root != nil {
-		f.Root.Invalidated = make(chan struct{})
-		walk(f.Nodes, f.Root)
-	}else{
-		t.errf("could not retrieve document root for %s", f.ID)
-		return
-	}
+	f.Root.Invalidated = make(chan struct{})
+	walk(f.Nodes, f.Root)
 }
 
 // pageEvent handles incoming page events.
