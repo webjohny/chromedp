@@ -252,9 +252,6 @@ func (s *Selector) waitReady(check func(context.Context, runtime.ExecutionContex
 		if check != nil {
 			errc := make(chan error, 1)
 			for _, n := range nodes {
-				if n == nil {
-					continue
-				}
 				go func(n *cdp.Node) {
 					select {
 					case <-ctx.Done():
@@ -1218,7 +1215,7 @@ func ScrollIntoView(sel interface{}, opts ...QueryOption) QueryAction {
 			return fmt.Errorf("selector %q did not return any nodes", sel)
 		}
 
-		var pos []int
+		var pos []float64
 		err := evalInCtx(ctx, execCtx, snippet(scrollIntoViewJS, cashX(true), sel, nodes[0]), &pos)
 		if err != nil {
 			return err

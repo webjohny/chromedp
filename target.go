@@ -47,7 +47,17 @@ func (t *Target) enclosingFrame(node *cdp.Node) cdp.FrameID {
 	t.frameMu.RLock()
 	top := t.frames[t.cur]
 	t.frameMu.RUnlock()
-	for node != nil && node.FrameID == "" {
+	top.RLock()
+	defer top.RUnlock()
+	for {
+		if node == nil {
+			// Avoid crashing. This can happen if we're using an old
+			// node that has been replaced, for example.
+			return ""
+		}
+		if node.FrameID != "" {
+			break
+		}
 		node = top.Nodes[node.ParentID]
 	}
 	if node == nil {
@@ -252,13 +262,8 @@ func (t *Target) documentUpdated(ctx context.Context) {
 		t.errf("could not retrieve document root for %s: %v", f.ID, err)
 		return
 	}
-	if f.Root != nil {
-		f.Root.Invalidated = make(chan struct{})
-		walk(f.Nodes, f.Root)
-	}else{
-		t.errf("could not retrieve document root for %s", f.ID)
-		return
-	}
+	f.Root.Invalidated = make(chan struct{})
+	walk(f.Nodes, f.Root)
 }
 
 // pageEvent handles incoming page events.
