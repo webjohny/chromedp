@@ -47,8 +47,11 @@ func (t *Target) enclosingFrame(node *cdp.Node) cdp.FrameID {
 	t.frameMu.RLock()
 	top := t.frames[t.cur]
 	t.frameMu.RUnlock()
-	for node.FrameID == "" {
+	for node != nil && node.FrameID == "" {
 		node = top.Nodes[node.ParentID]
+	}
+	if node == nil {
+		return ""
 	}
 	return node.FrameID
 }
