@@ -258,6 +258,7 @@ func initContextBrowser(ctx context.Context) (*Context, error) {
 	return c, nil
 }
 
+
 // Authentication proxy
 func Authentication(login string, password string) Tasks {
 	return Tasks{
@@ -445,7 +446,7 @@ func (c *Context) attachTarget(ctx context.Context, targetID target.ID) error {
 
 	for _, action := range actions {
 		if err := action.Do(cdp.WithExecutor(ctx, c.Target)); err != nil {
-			return fmt.Errorf("unable to execute %T: %v", action, err)
+			return fmt.Errorf("unable to execute %T: %w", action, err)
 		}
 	}
 	return nil

@@ -5,11 +5,12 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"os/exec"
-	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -123,6 +124,55 @@ func TestSkipNewContext(t *testing.T) {
 func TestRemoteAllocator(t *testing.T) {
 	t.Parallel()
 
+	tests := []struct {
+		name      string
+		modifyURL func(wsURL string) string
+	}{
+		{
+			name:      "original wsURL",
+			modifyURL: func(wsURL string) string { return wsURL },
+		},
+		{
+			name: "detect from ws",
+			modifyURL: func(wsURL string) string {
+				return wsURL[0:strings.Index(wsURL, "devtools")]
+			},
+		},
+		{
+			name: "detect from http",
+			modifyURL: func(wsURL string) string {
+				return "http" + wsURL[2:strings.Index(wsURL, "devtools")]
+			},
+		},
+		{
+			name: "hostname",
+			modifyURL: func(wsURL string) string {
+				h, err := os.Hostname()
+				if err != nil {
+					t.Fatal(err)
+				}
+				u, err := url.Parse(wsURL)
+				if err != nil {
+					t.Fatal(err)
+				}
+				_, post, err := net.SplitHostPort(u.Host)
+				if err != nil {
+					t.Fatal(err)
+				}
+				u.Host = net.JoinHostPort(h, post)
+				u.Path = "/"
+				return u.String()
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			testRemoteAllocator(t, tt.modifyURL)
+		})
+	}
+}
+
+func testRemoteAllocator(t *testing.T, modifyURL func(wsURL string) string) {
 	tempDir, err := ioutil.TempDir("", "chromedp-runner")
 	if err != nil {
 		t.Fatal(err)
@@ -141,6 +191,7 @@ func TestRemoteAllocator(t *testing.T) {
 
 		// TODO: perhaps deduplicate this code with ExecAllocator
 		"--user-data-dir="+tempDir,
+		"--remote-debugging-address=0.0.0.0",
 		"--remote-debugging-port=0",
 		"about:blank",
 	)
@@ -157,7 +208,7 @@ func TestRemoteAllocator(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	allocCtx, allocCancel := NewRemoteAllocator(context.Background(), wsURL)
+	allocCtx, allocCancel := NewRemoteAllocator(context.Background(), modifyURL(wsURL))
 	defer allocCancel()
 
 	taskCtx, taskCancel := NewContext(allocCtx,
@@ -244,9 +295,12 @@ func TestExecAllocatorMissingWebsocketAddr(t *testing.T) {
 	ctx, cancel := NewContext(allocCtx)
 	defer cancel()
 
-	want := regexp.MustCompile(`failed to start:\n.*Invalid devtools`)
+	// set the "s" flag to let "." match "\n"
+	// in Github Actions, the error text could be:
+	// "chrome failed to start:\n/bin/bash: /etc/profile.d/env_vars.sh: Permission denied\nmkdir: cannot create directory ‘/run/user/1001’: Permission denied\n[0321/081807.491906:ERROR:headless_shell.cc(720)] Invalid devtools server address\n"
+	want := `failed to start`
 	got := fmt.Sprintf("%v", Run(ctx))
-	if !want.MatchString(got) {
+	if !strings.Contains(got, want) {
 		t.Fatalf("want error to match %q, got %q", want, got)
 	}
 }
@@ -345,4 +399,31 @@ func TestWithBrowserOptionAlreadyAllocated(t *testing.T) {
 	_, _ = NewContext(ctx,
 		WithLogf(func(format string, args ...interface{}) {}),
 	)
+}
+
+func TestModifyCmdFunc(t *testing.T) {
+	t.Parallel()
+
+	tz := "Atlantic/Reykjavik"
+	allocCtx, cancel := NewExecAllocator(context.Background(),
+		append([]ExecAllocatorOption{
+			ModifyCmdFunc(func(cmd *exec.Cmd) {
+				cmd.Env = append(cmd.Env, "TZ="+tz)
+			}),
+		}, allocOpts...)...)
+	defer cancel()
+
+	ctx, cancel := NewContext(allocCtx)
+	defer cancel()
+
+	var ret string
+	if err := Run(ctx,
+		Evaluate(`Intl.DateTimeFormat().resolvedOptions().timeZone`, &ret),
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	if ret != tz {
+		t.Fatalf("got %s, want %s", ret, tz)
+	}
 }
